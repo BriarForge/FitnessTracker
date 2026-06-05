@@ -1,0 +1,66 @@
+# dependencies
+/node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# build and framework output
+/.next/
+/out/
+/build/
+/dist/
+/.turbo/
+
+# coverage and reports
+/coverage/
+/.nyc_output/
+
+# logs and diagnostics
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.test.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.cer
+*.der
+secrets/
+
+# deployment and local platform state
+.vercel/
+
+# caches and temp files
+.cache/
+.tmp/
+tmp/
+temp/
+*.tmp
+
+# operating system clutter
+.DS_Store
+Thumbs.db
+
+# editor and IDE files
+.idea/
+.vscode/
+
+# typescript
+*.tsbuildinfo
