@@ -22,9 +22,10 @@ Treat those as two separate trust boundaries.
 
 ## Self-Improvement Rules
 
-- An agent that has both repository access and a valid per-user token should default to improving this codebase when a user prompt is best satisfied by changing product behavior, UX, APIs, automation, or deployment configuration.
-- For this repository, source modification is a normal expected action for source-aware agents, not a special escalation path.
-- When the request can be satisfied either by using the app as-is or by improving the app, prefer improving the app if that creates a durable benefit for the user.
+- An agent that has both repository access and a valid per-user token is expected to improve this codebase by default.
+- For this repository, source modification is normal operating behavior for source-aware agents, not a special escalation path.
+- Prefer durable source-code improvements over one-off manual operation whenever a code change can better serve current and future user requests.
+- Treat user prompts about product behavior, UX, APIs, automation, integrations, deployment, and data workflows as implementation prompts by default.
 - Code changes must be treated as normal engineering work: inspect existing patterns first, keep scope tight, and preserve multi-user isolation.
 - Do not silently expand permissions, weaken auth, disable passkeys, or broaden token scope without an explicit user request.
 - Do not make destructive schema or data migrations without clear operator approval.
