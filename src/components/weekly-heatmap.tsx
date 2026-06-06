@@ -50,6 +50,8 @@ export function WeeklyHeatmap({
   selectedDate,
   onSelectDate,
 }: HeatmapProps) {
+  const weekColumns = `repeat(${Math.max(weeks.length, 1)}, minmax(0, 1fr))`;
+
   return (
     <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -70,9 +72,12 @@ export function WeeklyHeatmap({
         </div>
       </div>
 
-      <div className="mt-5 overflow-x-auto">
-        <div className="inline-flex flex-col gap-1">
-          <div className="ml-7 flex gap-1 text-[10px] text-slate-500">
+      <div className="mt-5">
+        <div className="flex flex-col gap-1">
+          <div
+            className="ml-7 grid gap-1 text-[10px] text-slate-500"
+            style={{ gridTemplateColumns: weekColumns }}
+          >
             {weeks.map((week, idx) => {
               const lastDay = week.days[week.days.length - 1];
               const label = lastDay
@@ -85,7 +90,10 @@ export function WeeklyHeatmap({
                     ]
                   : "";
               return (
-                <div key={`month-${idx}`} className="w-3 text-center">
+                <div
+                  key={`month-${idx}`}
+                  className="min-w-0 text-center"
+                >
                   {label !== prevLabel ? label : ""}
                 </div>
               );
@@ -102,9 +110,16 @@ export function WeeklyHeatmap({
                 </div>
               ))}
             </div>
-            <div className="flex gap-1">
+            <div
+              className="grid flex-1 gap-1"
+              style={{ gridTemplateColumns: weekColumns }}
+            >
               {weeks.map((week) => (
-                <div key={week.startDate} className="flex flex-col gap-1">
+                <div
+                  key={week.startDate}
+                  className="grid gap-1"
+                  style={{ gridTemplateRows: "repeat(7, minmax(0, 1fr))" }}
+                >
                   {week.days.map((day: ActivityDay) => {
                     const isSelected = day.date === selectedDate;
                     return (
@@ -119,7 +134,7 @@ export function WeeklyHeatmap({
                           day.count === 1 ? "" : "s"
                         }`}
                         className={[
-                          "h-3 w-3 rounded-sm transition",
+                          "aspect-square w-full rounded-sm transition",
                           intensityClass(day.count),
                           isSelected
                             ? "ring-2 ring-cyan-300 ring-offset-1 ring-offset-slate-950"
