@@ -15,7 +15,9 @@ import { tmpdir } from "os";
 
 import * as schema from "./schema";
 
-let _localDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
+type LocalDb = ReturnType<typeof drizzle<typeof schema>>;
+
+let _localDb: LocalDb | null = null;
 let _sqliteHandle: Database.Database | null = null;
 let _serverlessFallback = false;
 
@@ -37,14 +39,14 @@ export function resolveLocalDbPath(): string {
  * Lazily initialise (or return cached) SQLite connection.
  * Returns a no-op proxy when better-sqlite3 is unavailable (serverless).
  */
-export function getLocalDb() {
+export function getLocalDb(): LocalDb {
   if (_localDb) return _localDb;
   if (_serverlessFallback) return createNoopDb();
   _localDb = initLocalDb();
   return _localDb;
 }
 
-function initLocalDb() {
+function initLocalDb(): LocalDb {
   try {
     const dbPath = resolveLocalDbPath();
     const dir = dirname(dbPath);
@@ -75,9 +77,9 @@ export function isServerless(): boolean {
  * All query methods return empty arrays; inserts are no-ops.
  * This allows sync.ts to run without null checks everywhere.
  */
-function createNoopDb() {
+function createNoopDb(): LocalDb {
   const noopQuery = () => ({ all: () => [], limit: () => noopQuery() });
-  return new Proxy({} as ReturnType<typeof drizzle>, {
+  return new Proxy({} as LocalDb, {
     get: () => noopQuery,
   });
 }
