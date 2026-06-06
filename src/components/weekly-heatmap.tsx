@@ -48,21 +48,19 @@ function monthIndex(date: string): number {
   return month - 1;
 }
 
-function getWeekMonthLabel(
-  week: ActivityWeek,
-  previousWeek: ActivityWeek | undefined,
-): string {
-  const previousMonth = previousWeek
-    ? monthIndex(previousWeek.days[previousWeek.days.length - 1]?.date ?? "")
-    : null;
+function dayOfMonth(date: string): number {
+  const [, , day] = date.split("-").map(Number);
+  return day;
+}
 
-  let currentMonth = previousMonth;
-  for (const day of week.days) {
-    const dayMonth = monthIndex(day.date);
-    if (currentMonth === null || dayMonth !== currentMonth) {
-      return MONTH_LABELS[dayMonth] ?? "";
-    }
-    currentMonth = dayMonth;
+function getWeekMonthLabel(week: ActivityWeek, weekIdx: number): string {
+  if (weekIdx === 0) {
+    return MONTH_LABELS[monthIndex(week.days[0]?.date ?? "")] ?? "";
+  }
+
+  const firstOfMonth = week.days.find((day) => dayOfMonth(day.date) === 1);
+  if (firstOfMonth) {
+    return MONTH_LABELS[monthIndex(firstOfMonth.date)] ?? "";
   }
 
   return "";
@@ -109,9 +107,9 @@ export function WeeklyHeatmap({
           {weeks.map((week, weekIdx) => (
             <div
               key={`month-${week.startDate}`}
-              className="min-w-0 text-center text-[10px] text-slate-500"
+              className="min-w-0 justify-self-start text-left text-[10px] text-slate-500"
             >
-              {getWeekMonthLabel(week, weeks[weekIdx - 1])}
+              {getWeekMonthLabel(week, weekIdx)}
             </div>
           ))}
 
@@ -143,11 +141,11 @@ export function WeeklyHeatmap({
                     gridRowStart: dayIdx + 2,
                   }}
                   className={[
-                    "aspect-square w-full rounded-sm transition",
+                    "h-3 w-3 rounded-sm transition",
                     intensityClass(day.count),
                     isSelected
                       ? "ring-2 ring-cyan-300 ring-offset-1 ring-offset-slate-950"
-                      : "hover:scale-110",
+                      : "hover:scale-125",
                   ].join(" ")}
                 />
               );
