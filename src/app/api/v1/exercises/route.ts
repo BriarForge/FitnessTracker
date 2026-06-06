@@ -25,11 +25,22 @@ const exerciseBodySchema = z.object({
 });
 
 function isUniqueViolation(err: unknown) {
-  if (!(err instanceof Error)) return false;
-  const message = err.message;
+  if (!err || typeof err !== "object") return false;
+  const candidate = err as {
+    cause?: { code?: string; constraint?: string };
+    code?: string;
+    message?: string;
+  };
+  if (candidate.code === "23505") return true;
+  if (candidate.cause?.code === "23505") return true;
+  if (candidate.cause?.constraint?.includes("exercises_user_name_unique")) {
+    return true;
+  }
+  const message = candidate.message ?? "";
   return (
     message.includes("23505") ||
-    message.toLowerCase().includes("unique constraint")
+    message.toLowerCase().includes("unique constraint") ||
+    message.toLowerCase().includes("duplicate key")
   );
 }
 
