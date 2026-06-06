@@ -141,11 +141,11 @@ export function WeeklyHeatmap({
                     gridRowStart: dayIdx + 2,
                   }}
                   className={[
-                    "h-3 w-3 rounded-sm transition",
+                    "h-3 w-full rounded-[4px] transition",
                     intensityClass(day.count),
                     isSelected
                       ? "ring-2 ring-cyan-300 ring-offset-1 ring-offset-slate-950"
-                      : "hover:scale-125",
+                      : "hover:scale-y-125",
                   ].join(" ")}
                 />
               );
@@ -156,10 +156,10 @@ export function WeeklyHeatmap({
 
       <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
         <span>Less</span>
-        <span className="h-3 w-3 rounded-sm bg-slate-900 border border-white/5" />
-        <span className="h-3 w-3 rounded-sm bg-emerald-500/30 border border-emerald-300/20" />
-        <span className="h-3 w-3 rounded-sm bg-emerald-400/60 border border-emerald-300/40" />
-        <span className="h-3 w-3 rounded-sm bg-emerald-300 border border-emerald-200" />
+        <span className="h-3 w-5 rounded-[4px] bg-slate-900 border border-white/5" />
+        <span className="h-3 w-5 rounded-[4px] bg-emerald-500/30 border border-emerald-300/20" />
+        <span className="h-3 w-5 rounded-[4px] bg-emerald-400/60 border border-emerald-300/40" />
+        <span className="h-3 w-5 rounded-[4px] bg-emerald-300 border border-emerald-200" />
         <span>More</span>
       </div>
     </div>
