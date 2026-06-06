@@ -21,12 +21,27 @@ let _localDb: LocalDb | null = null;
 let _sqliteHandle: Database.Database | null = null;
 let _serverlessFallback = false;
 
-/** Resolve the local DB file path, with sensible default. */
+/**
+ * Resolve the local DB file path, with sensible default.
+ *
+ * Order of precedence:
+ *   1. LOCAL_DB_PATH env var (explicit override)
+ *   2. Hardcoded macOS OneDrive path — Hermes cron sessions override $HOME
+ *      to the profile dir, so relying on $HOME produces a phantom path.
+ *      The hardcoded path is the canonical OneDrive location and is
+ *      platform-portable only insofar as macOS is the supported host.
+ *   3. $HOME-based fallback for non-macOS or non-Hermes contexts.
+ */
 export function resolveLocalDbPath(): string {
   if (process.env.LOCAL_DB_PATH) {
     return process.env.LOCAL_DB_PATH;
   }
-  // OneDrive default: same folder hierarchy as shw-michael and financial
+  const macOneDrive =
+    "/Users/mike/Library/CloudStorage/OneDrive-Personal/AI/shw-michael/FitnessTracker/fitness-local.db";
+  if (process.platform === "darwin" && existsSync(dirname(macOneDrive))) {
+    return macOneDrive;
+  }
+  // Fallback for non-macOS hosts or unusual setups.
   const home = process.env.HOME ?? "/Users/mike";
   return join(
     home,
