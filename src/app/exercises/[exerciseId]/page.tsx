@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import { addExerciseLogAction } from "@/app/actions";
 import { ProgressChart } from "@/components/progress-chart";
-import { formatMetricValue, getExerciseProgress } from "@/lib/fitness";
+import { formatMetricValue } from "@/lib/fitness-shared";
+import { getExerciseProgress } from "@/lib/fitness";
 import { requireUser } from "@/lib/session";
 
 type ExerciseDetailPageProps = {

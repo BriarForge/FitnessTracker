@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { addExerciseLogAction, createExerciseAction } from "@/app/actions";
 import { ActivityDashboardSection } from "@/components/activity-dashboard-section";
-import { getDashboardData, getMeasurementDescription, getWeeklyActivity, formatMetricValue } from "@/lib/fitness";
+import { formatMetricValue, getMeasurementDescription } from "@/lib/fitness-shared";
+import { getDashboardData, getWeeklyActivity } from "@/lib/fitness";
 import { requireUser } from "@/lib/session";
 
 export default async function DashboardPage() {
