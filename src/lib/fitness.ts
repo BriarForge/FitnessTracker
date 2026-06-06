@@ -11,6 +11,12 @@ import {
   exercises,
   userProfiles,
 } from "@/lib/db/app-schema";
+import {
+  mirrorProfileUpsert,
+  mirrorExerciseUpsert,
+  mirrorExerciseLogUpsert,
+  mirrorBodyweightEntryUpsert,
+} from "@/lib/db/sync";
 import type {
   ActivityDay,
   ActivityWeek,
@@ -60,6 +66,11 @@ export async function ensureUserProfile(userId: string) {
       userId,
     })
     .onConflictDoNothing();
+
+  // Mirror to local SQLite backup (idempotent upsert)
+  await mirrorProfileUpsert(userId, {
+    updatedAt: new Date(),
+  });
 }
 
 export type ExerciseWithStats = Awaited<
@@ -168,6 +179,20 @@ export async function createExercise(userId: string, input: ExerciseInput) {
     .returning();
 
   revalidatePath("/dashboard");
+
+  // Mirror to local SQLite backup
+  await mirrorExerciseUpsert({
+    id: exercise.id,
+    userId: exercise.userId,
+    name: exercise.name,
+    measurementType: exercise.measurementType,
+    unit: exercise.unit,
+    trackBodyweight: exercise.trackBodyweight,
+    notes: exercise.notes,
+    createdAt: exercise.createdAt,
+    updatedAt: exercise.updatedAt,
+  });
+
   return exercise;
 }
 
@@ -252,6 +277,19 @@ export async function addExerciseLog(userId: string, input: ExerciseLogInput) {
 
   revalidatePath("/dashboard");
   revalidatePath(`/exercises/${exercise.id}`);
+
+  // Mirror to local SQLite backup
+  await mirrorExerciseLogUpsert({
+    id: log.id,
+    userId: log.userId,
+    exerciseId: log.exerciseId,
+    value: Number(log.value),
+    bodyweightKg: log.bodyweightKg ? Number(log.bodyweightKg) : null,
+    note: log.note,
+    performedAt: log.performedAt,
+    createdAt: log.createdAt,
+  });
+
   return log;
 }
 
@@ -269,13 +307,23 @@ export async function updateBodyweight(userId: string, input: BodyweightInput) {
     .where(eq(userProfiles.userId, userId))
     .returning();
 
-  await db().insert(bodyweightEntries).values({
+  const [bwEntry] = await db().insert(bodyweightEntries).values({
     userId,
     weightKg: values.weightKg,
-  });
+  }).returning();
 
   revalidatePath("/dashboard");
   revalidatePath("/settings");
+
+  // Mirror to local SQLite backup
+  await mirrorBodyweightEntryUpsert({
+    id: bwEntry.id,
+    userId,
+    weightKg: Number(bwEntry.weightKg),
+    recordedAt: bwEntry.recordedAt,
+    createdAt: bwEntry.createdAt,
+  });
+
   return profile;
 }
 
@@ -293,6 +341,13 @@ export async function updateTimezone(userId: string, timezone: string) {
 
   revalidatePath("/dashboard");
   revalidatePath("/settings");
+
+  // Mirror to local SQLite backup
+  await mirrorProfileUpsert(userId, {
+    timezone,
+    updatedAt: new Date(),
+  });
+
   return profile;
 }
 

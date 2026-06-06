@@ -9,6 +9,8 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   AUTH_FROM_EMAIL: z.string().optional(),
   FITNESS_TIMEZONE: z.string().optional(),
+  /** Absolute path to local SQLite backup file. Defaults to OneDrive path. */
+  LOCAL_DB_PATH: z.string().optional(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
