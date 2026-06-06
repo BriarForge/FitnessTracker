@@ -43,6 +43,31 @@ function formatDateLabel(date: string): string {
   return `${d} ${month} ${y}`;
 }
 
+function monthIndex(date: string): number {
+  const [, month] = date.split("-").map(Number);
+  return month - 1;
+}
+
+function getWeekMonthLabel(
+  week: ActivityWeek,
+  previousWeek: ActivityWeek | undefined,
+): string {
+  const previousMonth = previousWeek
+    ? monthIndex(previousWeek.days[previousWeek.days.length - 1]?.date ?? "")
+    : null;
+
+  let currentMonth = previousMonth;
+  for (const day of week.days) {
+    const dayMonth = monthIndex(day.date);
+    if (currentMonth === null || dayMonth !== currentMonth) {
+      return MONTH_LABELS[dayMonth] ?? "";
+    }
+    currentMonth = dayMonth;
+  }
+
+  return "";
+}
+
 export function WeeklyHeatmap({
   weeks,
   totalSessions,
@@ -50,7 +75,10 @@ export function WeeklyHeatmap({
   selectedDate,
   onSelectDate,
 }: HeatmapProps) {
-  const weekColumns = `repeat(${Math.max(weeks.length, 1)}, minmax(0, 1fr))`;
+  const gridTemplateColumns = `1.75rem repeat(${Math.max(
+    weeks.length,
+    1,
+  )}, minmax(0, 1fr))`;
 
   return (
     <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6">
@@ -73,80 +101,58 @@ export function WeeklyHeatmap({
       </div>
 
       <div className="mt-5">
-        <div className="flex flex-col gap-1">
-          <div
-            className="ml-7 grid gap-1 text-[10px] text-slate-500"
-            style={{ gridTemplateColumns: weekColumns }}
-          >
-            {weeks.map((week, idx) => {
-              const lastDay = week.days[week.days.length - 1];
-              const label = lastDay
-                ? MONTH_LABELS[Number(lastDay.date.split("-")[1]) - 1]
-                : "";
-              const prevLabel =
-                idx > 0
-                  ? MONTH_LABELS[
-                      Number(weeks[idx - 1].days[0].date.split("-")[1]) - 1
-                    ]
-                  : "";
-              return (
-                <div
-                  key={`month-${idx}`}
-                  className="min-w-0 text-center"
-                >
-                  {label !== prevLabel ? label : ""}
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex items-start gap-1">
-            <div className="flex w-7 flex-col gap-1 pt-px text-[10px] text-slate-500">
-              {DAY_LABELS.map((label, idx) => (
-                <div
-                  key={`day-label-${idx}`}
-                  className="flex h-3 items-center justify-end pr-1"
-                >
-                  {label}
-                </div>
-              ))}
-            </div>
+        <div
+          className="grid gap-1"
+          style={{ gridTemplateColumns }}
+        >
+          <div aria-hidden="true" />
+          {weeks.map((week, weekIdx) => (
             <div
-              className="grid flex-1 gap-1"
-              style={{ gridTemplateColumns: weekColumns }}
+              key={`month-${week.startDate}`}
+              className="min-w-0 text-center text-[10px] text-slate-500"
             >
-              {weeks.map((week) => (
-                <div
-                  key={week.startDate}
-                  className="grid gap-1"
-                  style={{ gridTemplateRows: "repeat(7, minmax(0, 1fr))" }}
-                >
-                  {week.days.map((day: ActivityDay) => {
-                    const isSelected = day.date === selectedDate;
-                    return (
-                      <button
-                        key={day.date}
-                        type="button"
-                        onClick={() => onSelectDate(day.date)}
-                        title={`${formatDateLabel(day.date)} — ${day.count} session${
-                          day.count === 1 ? "" : "s"
-                        }`}
-                        aria-label={`${formatDateLabel(day.date)}: ${day.count} session${
-                          day.count === 1 ? "" : "s"
-                        }`}
-                        className={[
-                          "aspect-square w-full rounded-sm transition",
-                          intensityClass(day.count),
-                          isSelected
-                            ? "ring-2 ring-cyan-300 ring-offset-1 ring-offset-slate-950"
-                            : "hover:scale-110",
-                        ].join(" ")}
-                      />
-                    );
-                  })}
-                </div>
-              ))}
+              {getWeekMonthLabel(week, weeks[weekIdx - 1])}
             </div>
-          </div>
+          ))}
+
+          {DAY_LABELS.map((label, dayIdx) => (
+            <div
+              key={`day-label-${dayIdx}`}
+              className="flex items-center justify-end pr-1 text-[10px] text-slate-500"
+            >
+              {label}
+            </div>
+          ))}
+
+          {weeks.flatMap((week, weekIdx) =>
+            week.days.map((day: ActivityDay, dayIdx) => {
+              const isSelected = day.date === selectedDate;
+              return (
+                <button
+                  key={day.date}
+                  type="button"
+                  onClick={() => onSelectDate(day.date)}
+                  title={`${formatDateLabel(day.date)} — ${day.count} session${
+                    day.count === 1 ? "" : "s"
+                  }`}
+                  aria-label={`${formatDateLabel(day.date)}: ${day.count} session${
+                    day.count === 1 ? "" : "s"
+                  }`}
+                  style={{
+                    gridColumnStart: weekIdx + 2,
+                    gridRowStart: dayIdx + 2,
+                  }}
+                  className={[
+                    "aspect-square w-full rounded-sm transition",
+                    intensityClass(day.count),
+                    isSelected
+                      ? "ring-2 ring-cyan-300 ring-offset-1 ring-offset-slate-950"
+                      : "hover:scale-110",
+                  ].join(" ")}
+                />
+              );
+            }),
+          )}
         </div>
       </div>
 
