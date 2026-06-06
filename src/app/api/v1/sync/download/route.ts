@@ -28,6 +28,16 @@ export async function GET(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (process.env.VERCEL === "1") {
+    return Response.json(
+      {
+        error:
+          "Local SQLite download is disabled on Vercel serverless. Run the backup job from a durable local agent environment.",
+      },
+      { status: 501 },
+    );
+  }
+
   try {
     const snapshot =
       actor.kind === "static-key"

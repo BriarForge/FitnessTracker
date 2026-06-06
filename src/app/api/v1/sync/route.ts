@@ -23,6 +23,18 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   const forceFull = url.searchParams.get("force") === "true";
 
+  if (process.env.VERCEL === "1") {
+    return NextResponse.json(
+      {
+        ok: false,
+        forceFull,
+        error:
+          "Local SQLite reconcile is disabled on Vercel serverless. Run this sync from a durable local agent environment.",
+      },
+      { status: 202 },
+    );
+  }
+
   const result = await reconcileFromNeonWithOptions({ full: forceFull });
 
   return NextResponse.json(
@@ -37,6 +49,7 @@ export async function POST(request: Request) {
 
 export async function GET() {
   return NextResponse.json({
-    message: "Use POST to trigger reconcile, GET /download to fetch the file",
+    message:
+      "Use POST to trigger local reconcile outside Vercel; GET /download fetches a local SQLite file only where local storage is durable.",
   });
 }
