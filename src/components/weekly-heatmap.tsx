@@ -21,7 +21,7 @@ function intensityClass(count: number): string {
   return "bg-emerald-300 border border-emerald-200";
 }
 
-const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_LABELS = [
   "Jan",
   "Feb",
