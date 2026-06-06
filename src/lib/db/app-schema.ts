@@ -25,6 +25,7 @@ export const userProfiles = pgTable("user_profiles", {
     scale: 2,
     mode: "number",
   }),
+  timezone: text("timezone"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

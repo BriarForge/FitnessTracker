@@ -8,6 +8,7 @@ const envSchema = z.object({
   PASSKEY_RP_ID: z.string().min(1),
   RESEND_API_KEY: z.string().optional(),
   AUTH_FROM_EMAIL: z.string().optional(),
+  FITNESS_TIMEZONE: z.string().optional(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

@@ -4,6 +4,7 @@ import {
   addExerciseLog,
   createExercise,
   updateBodyweight,
+  updateTimezone,
 } from "@/lib/fitness";
 import { requireUser } from "@/lib/session";
 
@@ -46,4 +47,10 @@ export async function updateBodyweightAction(formData: FormData) {
   await updateBodyweight(session.user.id, {
     weightKg: Number(getString(formData, "weightKg")),
   });
+}
+
+export async function updateTimezoneAction(formData: FormData) {
+  const session = await requireUser();
+
+  await updateTimezone(session.user.id, getString(formData, "timezone"));
 }

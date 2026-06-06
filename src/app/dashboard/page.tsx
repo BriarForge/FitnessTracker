@@ -1,15 +1,22 @@
 import Link from "next/link";
 
 import { addExerciseLogAction, createExerciseAction } from "@/app/actions";
-import { getDashboardData, getMeasurementDescription, formatMetricValue } from "@/lib/fitness";
+import { ActivityDashboardSection } from "@/components/activity-dashboard-section";
+import { getDashboardData, getMeasurementDescription, getWeeklyActivity, formatMetricValue } from "@/lib/fitness";
 import { requireUser } from "@/lib/session";
 
 export default async function DashboardPage() {
   const session = await requireUser();
   const data = await getDashboardData(session.user.id);
+  const activity = await getWeeklyActivity(session.user.id, 12, undefined, data.profile?.timezone);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10">
+      <ActivityDashboardSection
+        weeks={activity.weeks}
+        totalSessions={activity.totalSessions}
+        timezone={activity.timezone}
+      />
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6">
           <div className="text-xs uppercase tracking-[0.25em] text-cyan-300">
@@ -44,6 +51,7 @@ export default async function DashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold text-white">Exercises</h1>
+              <p className="mt-1 text-xs text-slate-500">Timezone: {data.timezone}</p>
               <p className="mt-2 text-sm text-slate-400">
                 Create an exercise once, then append quantities over time.
               </p>
