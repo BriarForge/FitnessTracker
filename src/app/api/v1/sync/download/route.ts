@@ -1,7 +1,7 @@
 /**
  * GET /api/v1/sync/download
  *
- * Download the current local SQLite backup file.
+ * Download a user-scoped SQLite snapshot from the current local backup file.
  * Requires a valid API token with "write" scope.
  *
  * Usage in cron job:
@@ -10,17 +10,17 @@
  *        -o fitness-local.db
  */
 
-import { createReadStream } from "fs";
-import { statSync } from "fs";
-import { join } from "path";
+import {
+  createFullLocalDbSnapshot,
+  createUserScopedLocalDbSnapshot,
+} from "@/lib/db";
+import { getSyncRequestActor } from "@/lib/token-auth";
 
-import { NextResponse } from "next/server";
-
-import { resolveLocalDbPath } from "@/lib/db";
-import { getRequestActor } from "@/lib/token-auth";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const actor = await getRequestActor(request.headers, {
+  const actor = await getSyncRequestActor(request.headers, {
     exercises: ["write"],
   });
 
@@ -28,18 +28,19 @@ export async function GET(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const dbPath = resolveLocalDbPath();
-
   try {
-    const stats = statSync(dbPath);
-    const fileName = join(dbPath).split("/").pop() ?? "fitness-local.db";
-    const stream = createReadStream(dbPath);
+    const snapshot =
+      actor.kind === "static-key"
+        ? await createFullLocalDbSnapshot()
+        : await createUserScopedLocalDbSnapshot(actor.userId);
+    const body = new ArrayBuffer(snapshot.byteLength);
+    new Uint8Array(body).set(snapshot);
 
-    return new Response(stream as unknown as ReadableStream, {
+    return new Response(body, {
       headers: {
         "Content-Type": "application/vnd.sqlite3",
-        "Content-Disposition": `attachment; filename="${fileName}"`,
-        "Content-Length": String(stats.size),
+        "Content-Disposition": `attachment; filename="fitness-local.db"`,
+        "Content-Length": String(snapshot.byteLength),
         "Cache-Control": "no-store",
       },
     });

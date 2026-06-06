@@ -11,6 +11,8 @@ const envSchema = z.object({
   FITNESS_TIMEZONE: z.string().optional(),
   /** Absolute path to local SQLite backup file. Defaults to OneDrive path. */
   LOCAL_DB_PATH: z.string().optional(),
+  /** Static API key for cron sync scripts (bypasses user auth). */
+  SYNC_API_KEY: z.string().optional(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { getEnv } from "@/lib/env";
 
 type PermissionStatement = Record<string, string[]>;
 
@@ -12,6 +13,8 @@ export type RequestActor =
       kind: "session";
       userId: string;
     };
+
+export type SyncRequestActor = RequestActor | { kind: "static-key" };
 
 function readApiKey(requestHeaders: Headers) {
   const authorization = requestHeaders.get("authorization");
@@ -60,4 +63,18 @@ export async function getRequestActor(
     kind: "session",
     userId: session.user.id,
   };
+}
+
+export async function getSyncRequestActor(
+  requestHeaders: Headers,
+  permissions?: PermissionStatement,
+): Promise<SyncRequestActor | null> {
+  const key = readApiKey(requestHeaders);
+  const env = getEnv();
+
+  if (key && env.SYNC_API_KEY && key === env.SYNC_API_KEY) {
+    return { kind: "static-key" };
+  }
+
+  return getRequestActor(requestHeaders, permissions);
 }

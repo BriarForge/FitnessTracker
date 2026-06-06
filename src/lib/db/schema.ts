@@ -9,7 +9,6 @@
  */
 
 import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
 
 // ── Fitness app tables ───────────────────────────────────────────────────────
 
@@ -84,10 +83,6 @@ export const sqliteSyncMeta = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (t) => ({
-    // Exclude sync_meta from any auto-sync to avoid recursion
-    // (not a foreign key target, just a convention)
-  }),
 );
 
 // ── Types ─────────────────────────────────────────────────────────────────────

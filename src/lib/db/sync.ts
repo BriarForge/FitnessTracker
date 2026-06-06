@@ -14,7 +14,7 @@
  * changed since the last run.
  */
 
-import { and, eq, gte, desc } from "drizzle-orm";
+import { eq, gte } from "drizzle-orm";
 
 import { getDb } from "./index";
 import { getLocalDb, getLocalDbHandle } from "./local-index";
@@ -45,6 +45,10 @@ export interface SyncResult {
   };
   durationMs: number;
   errors: string[];
+}
+
+export interface ReconcileOptions {
+  full?: boolean;
 }
 
 // ── Sync meta helpers ────────────────────────────────────────────────────────
@@ -79,26 +83,35 @@ async function upsertLocalProfile(userId: string, data: {
   displayName?: string | null;
   currentBodyweightKg?: number | null;
   timezone?: string | null;
+  createdAt?: Date;
   updatedAt: Date;
 }) {
   const local = getLocalDb();
+  const values = {
+    userId,
+    ...(data.displayName !== undefined ? { displayName: data.displayName } : {}),
+    ...(data.currentBodyweightKg !== undefined
+      ? { currentBodyweightKg: data.currentBodyweightKg }
+      : {}),
+    ...(data.timezone !== undefined ? { timezone: data.timezone } : {}),
+    ...(data.createdAt ? { createdAt: data.createdAt } : {}),
+    updatedAt: data.updatedAt,
+  };
+  const set = {
+    ...(data.displayName !== undefined ? { displayName: data.displayName } : {}),
+    ...(data.currentBodyweightKg !== undefined
+      ? { currentBodyweightKg: data.currentBodyweightKg }
+      : {}),
+    ...(data.timezone !== undefined ? { timezone: data.timezone } : {}),
+    updatedAt: data.updatedAt,
+  };
+
   await local
     .insert(sqliteUserProfiles)
-    .values({
-      userId,
-      displayName: data.displayName ?? null,
-      currentBodyweightKg: data.currentBodyweightKg ?? null,
-      timezone: data.timezone ?? null,
-      updatedAt: data.updatedAt,
-    })
+    .values(values)
     .onConflictDoUpdate({
       target: sqliteUserProfiles.userId,
-      set: {
-        displayName: data.displayName ?? null,
-        currentBodyweightKg: data.currentBodyweightKg ?? null,
-        timezone: data.timezone ?? null,
-        updatedAt: data.updatedAt,
-      },
+      set,
     });
 }
 
@@ -219,6 +232,7 @@ export async function mirrorProfileUpsert(
     displayName?: string | null;
     currentBodyweightKg?: number | null;
     timezone?: string | null;
+    createdAt?: Date;
     updatedAt: Date;
   },
 ) {
@@ -308,12 +322,18 @@ export async function mirrorExerciseDelete(id: string) {
  * to preserve any local-only rows).
  */
 export async function reconcileFromNeon(): Promise<SyncResult> {
+  return reconcileFromNeonWithOptions();
+}
+
+export async function reconcileFromNeonWithOptions(
+  options: ReconcileOptions = {},
+): Promise<SyncResult> {
   const start = Date.now();
   const errors: string[] = [];
   const counts = { user_profiles: 0, exercises: 0, exercise_logs: 0, bodyweight_entries: 0 };
 
   const neon = getDb();
-  const lastSync = await getLastReconcileTime();
+  const lastSync = options.full ? null : await getLastReconcileTime();
 
   try {
     // ── user_profiles ─────────────────────────────────────────────────────
@@ -325,6 +345,7 @@ export async function reconcileFromNeon(): Promise<SyncResult> {
         displayName: row.displayName,
         currentBodyweightKg: row.currentBodyweightKg ? Number(row.currentBodyweightKg) : null,
         timezone: row.timezone,
+        createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       });
       counts.user_profiles++;

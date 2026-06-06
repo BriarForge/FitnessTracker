@@ -9,9 +9,10 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { join, dirname } from "path";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "fs";
+import { randomUUID } from "crypto";
+import { tmpdir } from "os";
 
-import { getEnv } from "@/lib/env";
 import * as schema from "./schema";
 
 let _localDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
@@ -59,11 +60,12 @@ export function getLocalDb() {
 /** Get the raw better-sqlite3 handle (for raw SQL access). */
 export function getLocalDbHandle(): Database.Database {
   if (!_sqliteHandle) {
-    // Trigger lazy init
     getLocalDb();
   }
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return _sqliteHandle!;
+  if (!_sqliteHandle) {
+    throw new Error("Local SQLite database was not initialized.");
+  }
+  return _sqliteHandle;
 }
 
 function initLocalSchema(db: Database.Database) {
@@ -132,4 +134,47 @@ export function closeLocalDb() {
   _sqliteHandle?.close();
   _sqliteHandle = null;
   _localDb = null;
+}
+
+export async function createUserScopedLocalDbSnapshot(userId: string): Promise<Buffer> {
+  const source = getLocalDbHandle();
+  source.pragma("wal_checkpoint(FULL)");
+
+  const tempPath = join(tmpdir(), `fitness-local-user-${randomUUID()}.db`);
+  await source.backup(tempPath);
+
+  const scoped = new Database(tempPath);
+  try {
+    scoped.pragma("foreign_keys = ON");
+    scoped.transaction(() => {
+      scoped.prepare("DELETE FROM exercise_logs WHERE user_id <> ?").run(userId);
+      scoped.prepare("DELETE FROM bodyweight_entries WHERE user_id <> ?").run(userId);
+      scoped.prepare("DELETE FROM exercises WHERE user_id <> ?").run(userId);
+      scoped.prepare("DELETE FROM user_profiles WHERE user_id <> ?").run(userId);
+      scoped.prepare("DELETE FROM sync_meta").run();
+    })();
+    scoped.exec("VACUUM");
+  } finally {
+    scoped.close();
+  }
+
+  try {
+    return readFileSync(tempPath);
+  } finally {
+    rmSync(tempPath, { force: true });
+  }
+}
+
+export async function createFullLocalDbSnapshot(): Promise<Buffer> {
+  const source = getLocalDbHandle();
+  source.pragma("wal_checkpoint(FULL)");
+
+  const tempPath = join(tmpdir(), `fitness-local-full-${randomUUID()}.db`);
+  await source.backup(tempPath);
+
+  try {
+    return readFileSync(tempPath);
+  } finally {
+    rmSync(tempPath, { force: true });
+  }
 }

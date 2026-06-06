@@ -5,11 +5,14 @@
 
 import { NextResponse } from "next/server";
 
-import { reconcileFromNeon, resolveLocalDbPath } from "@/lib/db";
-import { getRequestActor } from "@/lib/token-auth";
+import { reconcileFromNeonWithOptions } from "@/lib/db";
+import { getSyncRequestActor } from "@/lib/token-auth";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const actor = await getRequestActor(request.headers, {
+  const actor = await getSyncRequestActor(request.headers, {
     exercises: ["write"],
   });
 
@@ -17,16 +20,14 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const dbPath = resolveLocalDbPath();
   const url = new URL(request.url);
   const forceFull = url.searchParams.get("force") === "true";
 
-  const result = await reconcileFromNeon();
+  const result = await reconcileFromNeonWithOptions({ full: forceFull });
 
   return NextResponse.json(
     {
       ok: result.errors.length === 0,
-      path: dbPath,
       forceFull,
       ...result,
     },
@@ -35,10 +36,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  const dbPath = resolveLocalDbPath();
-
   return NextResponse.json({
-    localDbPath: dbPath,
     message: "Use POST to trigger reconcile, GET /download to fetch the file",
   });
 }

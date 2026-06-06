@@ -2,7 +2,13 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 
 import { getEnv } from "@/lib/env";
-import * as schema from "./schema";
+import * as appSchema from "./app-schema";
+import * as authSchema from "./auth-schema";
+
+const schema = {
+  ...appSchema,
+  ...authSchema,
+};
 
 // ── Primary: Neon PostgreSQL ─────────────────────────────────────────────────
 
@@ -19,13 +25,19 @@ export function getDb() {
 // ── Local: SQLite backup (OneDrive) ─────────────────────────────────────────
 
 export { getLocalDb } from "./local-index";
-export { getLocalDbHandle, resolveLocalDbPath } from "./local-index";
+export {
+  createFullLocalDbSnapshot,
+  createUserScopedLocalDbSnapshot,
+  getLocalDbHandle,
+  resolveLocalDbPath,
+} from "./local-index";
 
 // ── Convenience re-exports ────────────────────────────────────────────────────
 
 export type { SyncResult } from "./sync";
 export {
   reconcileFromNeon,
+  reconcileFromNeonWithOptions,
   mirrorProfileUpsert,
   mirrorExerciseUpsert,
   mirrorExerciseLogUpsert,
@@ -35,4 +47,5 @@ export {
 } from "./sync";
 
 export * from "./app-schema";
+export * from "./auth-schema";
 export * from "./schema";

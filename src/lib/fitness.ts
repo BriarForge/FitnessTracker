@@ -323,6 +323,10 @@ export async function updateBodyweight(userId: string, input: BodyweightInput) {
     recordedAt: bwEntry.recordedAt,
     createdAt: bwEntry.createdAt,
   });
+  await mirrorProfileUpsert(userId, {
+    currentBodyweightKg: Number(profile.currentBodyweightKg),
+    updatedAt: profile.updatedAt,
+  });
 
   return profile;
 }
