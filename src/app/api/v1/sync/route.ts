@@ -1,13 +1,6 @@
 /**
- * POST /api/v1/sync
- *
- * Trigger a full reconcile from Neon PostgreSQL into the local SQLite file.
- * Requires a valid API token with "write" scope on exercises.
- *
- * Useful for:
- * - Forcing a full sync after suspected drift
- * - Populating the local file for the first time
- * - Automated cron jobs (e.g. hourly or daily)
+ * POST /api/v1/sync — Trigger full reconcile from Neon → local SQLite
+ * GET  /api/v1/sync — Return sync status (no auth required)
  */
 
 import { NextResponse } from "next/server";
@@ -25,8 +18,6 @@ export async function POST(request: Request) {
   }
 
   const dbPath = resolveLocalDbPath();
-
-  // Optional: force full pull (ignore last-sync timestamp) via query param
   const url = new URL(request.url);
   const forceFull = url.searchParams.get("force") === "true";
 
@@ -39,24 +30,15 @@ export async function POST(request: Request) {
       forceFull,
       ...result,
     },
-    {
-      status: result.errors.length > 0 ? 207 : 200,
-    },
+    { status: result.errors.length > 0 ? 207 : 200 },
   );
 }
-
-/**
- * GET /api/v1/sync
- *
- * Return the current sync status (local DB path, last reconcile time).
- * Does not require auth — safe to check from a health probe.
- */
 
 export async function GET() {
   const dbPath = resolveLocalDbPath();
 
   return NextResponse.json({
     localDbPath: dbPath,
-    localDbExists: false, // caller can check filesystem
+    message: "Use POST to trigger reconcile, GET /download to fetch the file",
   });
 }
