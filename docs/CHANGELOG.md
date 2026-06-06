@@ -4,7 +4,16 @@ This document tracks notable version history for Fitness Tracker.
 
 ## Unreleased
 
+### Added
+
+- `DELETE /api/v1/exercises/{id}` endpoint, gated on the same `exercises:write` permission used for create. Returns 204 on success, 404 when the id is not owned by the caller, 400 on a malformed id. Cascades to child log entries via the existing schema.
+
 ### Changed
+
+- `POST /api/v1/exercises` and `POST /api/v1/logs` now validate the request body with explicit Zod schemas and return structured error envelopes (`400` for invalid input, `409` for unique-violation, `404` for missing exercise, `500` with detail for everything else) instead of opaque empty-body failures.
+- Unique-violation detection inspects both `err.code` and `err.cause.code` so the Neon serverless driver's nested error shape is recognised.
+
+### Notes
 
 - Clarified repository instructions for source-aware agents so self-improvement is the default operating mode when agents have both repository access and a valid user token.
 
