@@ -17,6 +17,7 @@ import * as schema from "./schema";
 
 let _localDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
 let _sqliteHandle: Database.Database | null = null;
+let _serverlessFallback = false;
 
 /** Resolve the local DB file path, with sensible default. */
 export function resolveLocalDbPath(): string {
@@ -32,33 +33,60 @@ export function resolveLocalDbPath(): string {
   );
 }
 
-/** Lazily initialise (or return cached) SQLite connection. */
+/**
+ * Lazily initialise (or return cached) SQLite connection.
+ * Returns a no-op proxy when better-sqlite3 is unavailable (serverless).
+ */
 export function getLocalDb() {
   if (_localDb) return _localDb;
-
-  const dbPath = resolveLocalDbPath();
-
-  // Ensure the parent directory exists
-  const dir = dirname(dbPath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-
-  // better-sqlite3: open in WAL mode for safer concurrent access
-  _sqliteHandle = new Database(dbPath);
-  _sqliteHandle.pragma("journal_mode = WAL");
-  _sqliteHandle.pragma("foreign_keys = ON");
-
-  _localDb = drizzle(_sqliteHandle, { schema });
-
-  // Run schema migrations on first open
-  initLocalSchema(_sqliteHandle);
-
+  if (_serverlessFallback) return createNoopDb();
+  _localDb = initLocalDb();
   return _localDb;
+}
+
+function initLocalDb() {
+  try {
+    const dbPath = resolveLocalDbPath();
+    const dir = dirname(dbPath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    _sqliteHandle = new Database(dbPath);
+    _sqliteHandle.pragma("journal_mode = WAL");
+    _sqliteHandle.pragma("foreign_keys = ON");
+    const db = drizzle(_sqliteHandle, { schema });
+    initLocalSchema(_sqliteHandle);
+    return db;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[local-index] better-sqlite3 unavailable (${msg}). Running in serverless mode — local sync disabled.`);
+    _serverlessFallback = true;
+    return createNoopDb();
+  }
+}
+
+/** True when running in an environment where better-sqlite3 is not available. */
+export function isServerless(): boolean {
+  return _serverlessFallback;
+}
+
+/**
+ * A no-op DB proxy returned when better-sqlite3 is unavailable.
+ * All query methods return empty arrays; inserts are no-ops.
+ * This allows sync.ts to run without null checks everywhere.
+ */
+function createNoopDb() {
+  const noopQuery = () => ({ all: () => [], limit: () => noopQuery() });
+  return new Proxy({} as ReturnType<typeof drizzle>, {
+    get: () => noopQuery,
+  });
 }
 
 /** Get the raw better-sqlite3 handle (for raw SQL access). */
 export function getLocalDbHandle(): Database.Database {
+  if (_serverlessFallback) {
+    throw new Error("Local SQLite not available in serverless environment.");
+  }
   if (!_sqliteHandle) {
     getLocalDb();
   }
