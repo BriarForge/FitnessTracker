@@ -18,12 +18,14 @@ export function SignInForm() {
     text: "Magic link is the recovery path. Passkeys are for your normal return sign-in.",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [showPasskeyRetry, setShowPasskeyRetry] = useState(false);
 
   const callbackURL = useMemo(() => "/dashboard", []);
 
   async function handleMagicLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
+    setShowPasskeyRetry(false);
 
     const result = await authClient.signIn.magicLink({
       email,
@@ -49,17 +51,27 @@ export function SignInForm() {
 
   async function handlePasskeySignIn() {
     setSubmitting(true);
+    setShowPasskeyRetry(false);
     const result = await authClient.signIn.passkey();
     setSubmitting(false);
 
     if (result.error) {
+      const errorCode =
+        "code" in result.error ? result.error.code : undefined;
+      const cancelled =
+        errorCode === "AUTH_CANCELLED" ||
+        errorCode === "ERROR_CEREMONY_ABORTED";
+      setShowPasskeyRetry(cancelled);
       setMessage({
-        tone: "error",
-        text: result.error.message ?? "Passkey sign-in failed.",
+        tone: cancelled ? "neutral" : "error",
+        text: cancelled
+          ? "The passkey prompt was closed. Retry to choose another available passkey app or saved credential."
+          : result.error.message ?? "Passkey sign-in failed.",
       });
       return;
     }
 
+    setShowPasskeyRetry(false);
     router.push("/dashboard");
     router.refresh();
   }
@@ -108,6 +120,16 @@ export function SignInForm() {
           >
             Use a saved passkey
           </button>
+          {showPasskeyRetry ? (
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handlePasskeySignIn}
+              className="rounded-full border border-cyan-300/30 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200 hover:bg-cyan-300/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Try another passkey app
+            </button>
+          ) : null}
         </div>
       </form>
 

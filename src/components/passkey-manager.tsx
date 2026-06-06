@@ -15,6 +15,8 @@ export function PasskeyManager() {
   const [items, setItems] = useState<PasskeyRecord[]>([]);
   const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [showRetryAdd, setShowRetryAdd] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -56,6 +58,38 @@ export function PasskeyManager() {
     };
   }, []);
 
+  async function handleAddPasskey() {
+    setMessage("");
+    setAdding(true);
+    setShowRetryAdd(false);
+
+    const result = await authClient.passkey.addPasskey({
+      name: `Passkey ${items.length + 1}`,
+    });
+
+    setAdding(false);
+
+    if (result.error) {
+      const errorCode =
+        "code" in result.error ? result.error.code : undefined;
+      const cancelled =
+        errorCode === "REGISTRATION_CANCELLED" ||
+        errorCode === "ERROR_CEREMONY_ABORTED" ||
+        errorCode === "AUTH_CANCELLED";
+      setShowRetryAdd(cancelled);
+      setMessage(
+        cancelled
+          ? "The passkey prompt was closed. Retry to choose another available passkey app or authenticator."
+          : result.error.message ?? "Unable to add a passkey.",
+      );
+      return;
+    }
+
+    setShowRetryAdd(false);
+    setMessage("Passkey added.");
+    await load();
+  }
+
   return (
     <section className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -68,29 +102,30 @@ export function PasskeyManager() {
         </div>
         <button
           type="button"
+          disabled={adding}
           className="rounded-full border border-emerald-300/25 px-4 py-2 text-sm font-medium text-emerald-100 transition hover:border-emerald-200 hover:bg-emerald-300/10"
-          onClick={async () => {
-            setMessage("");
-            const result = await authClient.passkey.addPasskey({
-              name: `Passkey ${items.length + 1}`,
-            });
-
-            if (result.error) {
-              setMessage(result.error.message ?? "Unable to add a passkey.");
-              return;
-            }
-
-            setMessage("Passkey added.");
-            await load();
-          }}
+          onClick={handleAddPasskey}
         >
-          Add passkey
+          {adding ? "Adding..." : "Add passkey"}
         </button>
       </div>
 
       {message ? (
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
           {message}
+        </div>
+      ) : null}
+
+      {showRetryAdd ? (
+        <div className="mt-4">
+          <button
+            type="button"
+            disabled={adding}
+            onClick={handleAddPasskey}
+            className="rounded-full border border-cyan-300/30 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-200 hover:bg-cyan-300/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Try another passkey app
+          </button>
         </div>
       ) : null}
 
