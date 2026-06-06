@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "auth:generate": "better-auth generate --config src/lib/auth.ts --output src/lib/db/auth-schema.ts --yes"
+    "auth:generate": "better-auth generate --config src/lib/auth.ts --output src/lib/db/auth-schema.ts --yes",
+    "sync:local": "tsx scripts/sync-local.ts"
   },
   "dependencies": {
     "@better-auth/api-key": "^1.6.14",
