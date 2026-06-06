@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { getEnv } from "@/lib/env";
 
 type PermissionStatement = Record<string, string[]>;
 
@@ -70,9 +69,9 @@ export async function getSyncRequestActor(
   permissions?: PermissionStatement,
 ): Promise<SyncRequestActor | null> {
   const key = readApiKey(requestHeaders);
-  const env = getEnv();
+  const syncApiKey = process.env.SYNC_API_KEY;
 
-  if (key && env.SYNC_API_KEY && key === env.SYNC_API_KEY) {
+  if (key && syncApiKey && key === syncApiKey) {
     return { kind: "static-key" };
   }
 
