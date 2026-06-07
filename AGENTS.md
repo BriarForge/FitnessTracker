@@ -37,3 +37,25 @@ Treat those as two separate trust boundaries.
 - Validate any API, schema, or auth changes against the existing token model before shipping.
 - Preserve compatibility for external agents that rely on the documented API surface, especially `/api/v1/*` and `/api/openapi`.
 - If a request is ambiguous and could impact security, billing, or other users' data, stop and ask for clarification.
+
+
+---
+
+## Git identity and wrappers (mandatory)
+
+All git activity in this repo MUST go through a per-person wrapper. No bare `git push`.
+
+| Agent | Wrapper |
+|---|---|
+| Aoife | `git-aoife` |
+| Declan | `git-declan` |
+| Milena | `git-milena` (not yet installed) |
+| Sofia | `git-sofia` (not yet installed) |
+
+Whoever pushes uses their own wrapper. Example: Declan pushes with `git-declan push`, Aoife with `git-aoife push`. Wrappers set committer identity and route the push to the correct per-person remote on the matching `github-<person>` SSH host.
+
+Run `git-<person> whoami` to confirm before pushing.
+
+## Source of truth
+
+Inherited from `/Users/mike/Projects/BriarForge/AGENTS.md`. When this file and the parent conflict, the parent wins until this file is updated to match.
