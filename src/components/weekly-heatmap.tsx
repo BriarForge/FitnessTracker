@@ -21,7 +21,6 @@ function intensityClass(count: number): string {
   return "bg-emerald-300 border border-emerald-200";
 }
 
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_LABELS = [
   "Jan",
   "Feb",
@@ -43,27 +42,40 @@ function formatDateLabel(date: string): string {
   return `${d} ${month} ${y}`;
 }
 
-function monthIndex(date: string): number {
-  const [, month] = date.split("-").map(Number);
-  return month - 1;
-}
-
 function dayOfMonth(date: string): number {
   const [, , day] = date.split("-").map(Number);
   return day;
 }
 
-function getWeekMonthLabel(week: ActivityWeek, weekIdx: number): string {
-  if (weekIdx === 0) {
-    return MONTH_LABELS[monthIndex(week.days[0]?.date ?? "")] ?? "";
+type MonthRow = {
+  key: string;
+  label: string;
+  days: Map<number, ActivityDay>;
+};
+
+function buildMonthRows(weeks: ActivityWeek[]): MonthRow[] {
+  const rows = new Map<string, MonthRow>();
+
+  for (const week of weeks) {
+    for (const day of week.days) {
+      const [year, month] = day.date.split("-").map(Number);
+      const key = `${year}-${String(month).padStart(2, "0")}`;
+      const existingRow = rows.get(key);
+
+      if (existingRow) {
+        existingRow.days.set(dayOfMonth(day.date), day);
+        continue;
+      }
+
+      rows.set(key, {
+        key,
+        label: `${MONTH_LABELS[month - 1] ?? ""} ${year}`,
+        days: new Map([[dayOfMonth(day.date), day]]),
+      });
+    }
   }
 
-  const firstOfMonth = week.days.find((day) => dayOfMonth(day.date) === 1);
-  if (firstOfMonth) {
-    return MONTH_LABELS[monthIndex(firstOfMonth.date)] ?? "";
-  }
-
-  return "";
+  return Array.from(rows.values());
 }
 
 export function WeeklyHeatmap({
@@ -73,10 +85,9 @@ export function WeeklyHeatmap({
   selectedDate,
   onSelectDate,
 }: HeatmapProps) {
-  const gridTemplateColumns = `1.75rem repeat(${Math.max(
-    weeks.length,
-    1,
-  )}, minmax(0, 1fr))`;
+  const monthRows = buildMonthRows(weeks);
+  const dayNumbers = Array.from({ length: 31 }, (_, idx) => idx + 1);
+  const gridTemplateColumns = "4.5rem repeat(31, minmax(1.1rem, 1fr))";
 
   return (
     <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6">
@@ -98,32 +109,51 @@ export function WeeklyHeatmap({
         </div>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-5 overflow-x-auto pb-1">
         <div
-          className="grid gap-1"
+          className="grid min-w-[40rem] gap-1"
           style={{ gridTemplateColumns }}
         >
           <div aria-hidden="true" />
-          {weeks.map((week, weekIdx) => (
+          {dayNumbers.map((dayNumber) => (
             <div
-              key={`month-${week.startDate}`}
-              className="min-w-0 justify-self-start text-left text-[10px] text-slate-500"
+              key={`day-label-${dayNumber}`}
+              className="min-w-0 text-center text-[10px] text-slate-500"
             >
-              {getWeekMonthLabel(week, weekIdx)}
+              {dayNumber}
             </div>
           ))}
 
-          {DAY_LABELS.map((label, dayIdx) => (
+          {monthRows.map((monthRow, monthIdx) => (
             <div
-              key={`day-label-${dayIdx}`}
-              className="flex items-center justify-end pr-1 text-[10px] text-slate-500"
+              key={`month-label-${monthRow.key}`}
+              style={{
+                gridColumnStart: 1,
+                gridRowStart: monthIdx + 2,
+              }}
+              className="flex h-4 items-center pr-2 text-right text-[10px] text-slate-500"
             >
-              {label}
+              {monthRow.label}
             </div>
           ))}
 
-          {weeks.flatMap((week, weekIdx) =>
-            week.days.map((day: ActivityDay, dayIdx) => {
+          {monthRows.flatMap((monthRow, monthIdx) =>
+            dayNumbers.map((dayNumber) => {
+              const day = monthRow.days.get(dayNumber);
+              if (!day) {
+                return (
+                  <div
+                    key={`${monthRow.key}-${dayNumber}`}
+                    aria-hidden="true"
+                    style={{
+                      gridColumnStart: dayNumber + 1,
+                      gridRowStart: monthIdx + 2,
+                    }}
+                    className="h-4 w-full rounded-[4px] border border-transparent"
+                  />
+                );
+              }
+
               const isSelected = day.date === selectedDate;
               return (
                 <button
@@ -137,15 +167,15 @@ export function WeeklyHeatmap({
                     day.count === 1 ? "" : "s"
                   }`}
                   style={{
-                    gridColumnStart: weekIdx + 2,
-                    gridRowStart: dayIdx + 2,
+                    gridColumnStart: dayNumber + 1,
+                    gridRowStart: monthIdx + 2,
                   }}
                   className={[
-                    "h-3 w-full rounded-[4px] transition",
+                    "h-4 w-full rounded-[4px] transition",
                     intensityClass(day.count),
                     isSelected
                       ? "ring-2 ring-cyan-300 ring-offset-1 ring-offset-slate-950"
-                      : "hover:scale-y-125",
+                      : "hover:scale-105",
                   ].join(" ")}
                 />
               );

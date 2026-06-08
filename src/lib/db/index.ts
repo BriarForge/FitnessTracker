@@ -1,7 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 
-import { getEnv } from "@/lib/env";
 import * as appSchema from "./app-schema";
 import * as authSchema from "./auth-schema";
 
@@ -14,9 +13,22 @@ const schema = {
 
 let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
+/**
+ * Read DATABASE_URL directly from process.env without full Zod validation.
+ * Used by local/cron scripts that only need DB access and don't need the
+ * full app env (APP_BASE_URL, BETTER_AUTH_SECRET, etc.).
+ */
+export function getDatabaseUrl(): string {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error("DATABASE_URL is not set in process.env");
+  }
+  return url;
+}
+
 export function getDb() {
   if (!db) {
-    db = drizzle(neon(getEnv().DATABASE_URL), { schema });
+    db = drizzle(neon(getDatabaseUrl()), { schema });
   }
 
   return db;
