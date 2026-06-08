@@ -293,6 +293,32 @@ export async function addExerciseLog(userId: string, input: ExerciseLogInput) {
   return log;
 }
 
+export async function deleteExerciseLog(userId: string, logId: string) {
+  const [log] = await db()
+    .select()
+    .from(exerciseLogs)
+    .where(and(eq(exerciseLogs.id, logId), eq(exerciseLogs.userId, userId)))
+    .limit(1);
+
+  if (!log) {
+    throw new Error("Exercise log not found or not owned by user.");
+  }
+
+  await db()
+    .delete(exerciseLogs)
+    .where(eq(exerciseLogs.id, logId));
+
+  await db()
+    .update(exercises)
+    .set({ updatedAt: new Date() })
+    .where(eq(exercises.id, log.exerciseId));
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/exercises/${log.exerciseId}`);
+
+  return { deleted: logId };
+}
+
 export async function updateBodyweight(userId: string, input: BodyweightInput) {
   const values = bodyweightSchema.parse(input);
 
