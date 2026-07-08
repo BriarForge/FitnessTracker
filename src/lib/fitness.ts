@@ -131,6 +131,13 @@ export async function listExercisesForUser(userId: string) {
   });
 }
 
+export type DashboardTrendPoint = {
+  id: string;
+  value: number;
+  performedAt: Date;
+  bodyweightKg: number | null;
+};
+
 export async function getDashboardData(userId: string) {
   await ensureUserProfile(userId);
 
@@ -152,10 +159,41 @@ export async function getDashboardData(userId: string) {
     .leftJoin(exerciseLogs, eq(exerciseLogs.exerciseId, exercises.id))
     .where(eq(exercises.userId, userId));
 
+  // Per-exercise log series for the dashboard trend chart.
+  // One query for every exercise the user owns, keyed by exerciseId.
+  const logsByExercise: Record<string, DashboardTrendPoint[]> = {};
+  if (exerciseRows.length > 0) {
+    const exerciseIds = exerciseRows.map((row) => row.id);
+    const trendRows = await db()
+      .select({
+        id: exerciseLogs.id,
+        exerciseId: exerciseLogs.exerciseId,
+        value: exerciseLogs.value,
+        performedAt: exerciseLogs.performedAt,
+        bodyweightKg: exerciseLogs.bodyweightKg,
+      })
+      .from(exerciseLogs)
+      .where(inArray(exerciseLogs.exerciseId, exerciseIds))
+      .orderBy(desc(exerciseLogs.performedAt));
+    for (const row of trendRows) {
+      const list = logsByExercise[row.exerciseId] ?? [];
+      list.push({
+        id: row.id,
+        value: Number(row.value),
+        performedAt: row.performedAt,
+        bodyweightKg: row.bodyweightKg !== null && row.bodyweightKg !== undefined
+          ? Number(row.bodyweightKg)
+          : null,
+      });
+      logsByExercise[row.exerciseId] = list;
+    }
+  }
+
   return {
     profile,
     timezone,
     exercises: exerciseRows,
+    logsByExercise,
     summary: {
       totalExercises: summary?.totalExercises ?? 0,
       totalLogs: summary?.totalLogs ?? 0,

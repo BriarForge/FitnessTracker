@@ -2,11 +2,16 @@ import Link from "next/link";
 
 import { addExerciseLogAction, createExerciseAction } from "@/app/actions";
 import { ActivityDashboardSection } from "@/components/activity-dashboard-section";
+import { ExerciseTrendSection } from "@/components/exercise-trend-section";
 import { formatMetricValue, getMeasurementDescription } from "@/lib/fitness-shared";
 import { getDashboardData, getWeeklyActivity } from "@/lib/fitness";
 import { requireUser } from "@/lib/session";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ exercise?: string }>;
+}) {
   const session = await requireUser();
   const data = await getDashboardData(session.user.id);
   const activity = await getWeeklyActivity(session.user.id, 12, undefined, data.profile?.timezone);
@@ -46,6 +51,18 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+
+      <ExerciseTrendSection
+        exercises={data.exercises.map((exercise) => ({
+          id: exercise.id,
+          name: exercise.name,
+          unit: exercise.unit,
+          measurementType: exercise.measurementType,
+          trackBodyweight: exercise.trackBodyweight,
+        }))}
+        logsByExercise={data.logsByExercise}
+        currentBodyweightKg={data.profile?.currentBodyweightKg ?? null}
+      />
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
         <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6">
