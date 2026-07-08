@@ -7,11 +7,7 @@ import { formatMetricValue, getMeasurementDescription } from "@/lib/fitness-shar
 import { getDashboardData, getWeeklyActivity } from "@/lib/fitness";
 import { requireUser } from "@/lib/session";
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ exercise?: string }>;
-}) {
+export default async function DashboardPage() {
   const session = await requireUser();
   const data = await getDashboardData(session.user.id);
   const activity = await getWeeklyActivity(session.user.id, 12, undefined, data.profile?.timezone);
