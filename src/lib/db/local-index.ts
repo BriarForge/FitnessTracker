@@ -36,8 +36,11 @@ export function resolveLocalDbPath(): string {
   if (process.env.LOCAL_DB_PATH) {
     return process.env.LOCAL_DB_PATH;
   }
+  // Thread workspace path (AI/shw-michael/fitness-tracker/). Hermes cron
+  // sessions override $HOME to the profile dir, so the absolute OneDrive
+  // path is the only reliable default on this host.
   const macOneDrive =
-    "/Users/mike/Library/CloudStorage/OneDrive-Personal/AI/shw-michael/FitnessTracker/fitness-local.db";
+    "/Users/mike/Library/CloudStorage/OneDrive-Personal/AI/shw-michael/fitness-tracker/fitness-local.db";
   if (process.platform === "darwin" && existsSync(dirname(macOneDrive))) {
     return macOneDrive;
   }
@@ -45,7 +48,7 @@ export function resolveLocalDbPath(): string {
   const home = process.env.HOME ?? "/Users/mike";
   return join(
     home,
-    "Library/CloudStorage/OneDrive-Personal/AI/shw-michael/FitnessTracker",
+    "Library/CloudStorage/OneDrive-Personal/AI/shw-michael/fitness-tracker",
     "fitness-local.db",
   );
 }
