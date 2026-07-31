@@ -36,7 +36,7 @@ export function getDb() {
 
 // ── Local: SQLite backup (OneDrive) ─────────────────────────────────────────
 
-export { getLocalDb } from "./local-index";
+export { getLocalDb, isServerless } from "./local-index";
 export {
   createFullLocalDbSnapshot,
   createUserScopedLocalDbSnapshot,
