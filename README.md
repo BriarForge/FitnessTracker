@@ -1,3 +1,5 @@
+> **Moved:** now at McoreD/delpach-home `apps/fitness`, live at https://delpach.com/fitness. This repository is archived. See MOVED.md.
+
 # Fitness Tracker
 
 Multi-user fitness tracking with:
